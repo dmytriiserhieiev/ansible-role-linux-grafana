@@ -1,0 +1,69 @@
+---
+- name: Creating Grafana folder.
+  file:
+    dest: '{{ grafana_path }}/grafana/dashboards'
+    state: 'directory'
+    owner: 'grafana'
+    group: 'grafana'
+    mode: '0750'
+
+- name: Grafana configuration file transfer.
+  template:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    backup: 'yes'
+    owner: 'root'
+    group: 'grafana'
+    mode: '0664'
+  loop:
+    - { src: 'grafana-server.j2', dest: '/etc/sysconfig/grafana-server' }
+    - { src: 'ldap.toml.j2', dest: '/etc/grafana/ldap.toml', create: '{{ grafana_ldap_enabled | bool }}' }
+    - { src: 'grafana{{ grafana_version.split(".")[0] }}.ini.j2', dest: '/etc/grafana/grafana.ini' }
+  when: item.create | default(true) | bool
+  notify: Restart grafana-server service.
+
+- name: Grafana Dashboards provisioning files discover.
+  find:
+    paths: '/etc/grafana/provisioning/dashboards/'
+    patterns: "^.*.yaml"
+    use_regex: 'yes'
+  register: grafana_provisioning_dashboard_wildcard_files_to_delete
+
+- name: Grafana Dashboards provisioning structure cleanup.
+  file:
+    path: '{{ item.path }}'
+    state: 'absent'
+  loop: '{{ grafana_provisioning_dashboard_wildcard_files_to_delete.files }}'
+
+- name: Grafana Dashboards provisioning structure establish.
+  template:
+    src: 'dashboards.yaml.j2'
+    dest: '/etc/grafana/provisioning/dashboards/{{ item.category }}.yaml'
+    owner: 'root'
+    group: 'grafana'
+    mode: '0640'
+  loop: '{{ grafana_dashboard_arg }}'
+  notify: Restart grafana-server service.
+
+- name: Grafana Datasources provisioning files discover.
+  find:
+    paths: '/etc/grafana/provisioning/datasources/'
+    patterns: "^.*.yaml"
+    use_regex: 'yes'
+  register: grafana_provisioning_datasources_wildcard_files_to_delete
+
+- name: Grafana Datasources provisioning structure cleanup.
+  file:
+    path: '{{ item.path }}'
+    state: 'absent'
+  loop: '{{ grafana_provisioning_datasources_wildcard_files_to_delete.files }}'
+
+- name: Grafana Datasources configuration.
+  template:
+    src: 'datasources/{{ item.0.name }}.yaml.j2'
+    dest: '/etc/grafana/provisioning/datasources/{{ item.0.name }}.yaml'
+    owner: 'root'
+    group: 'grafana'
+    mode: '0640'
+  loop: "{{ grafana_ds_arg|subelements('settings') }}"
+  notify: Restart grafana-server service.

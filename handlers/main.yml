@@ -1,0 +1,8 @@
+---
+- name: Enable grafana service.
+  systemd:
+    name: 'grafana-server.service'
+    enabled: 'yes'
+    state: 'restarted'
+    daemon_reload: 'yes'
+  listen: Restart grafana-server service.

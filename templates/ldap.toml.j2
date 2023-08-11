@@ -1,0 +1,31 @@
+{{ ansible_managed | comment }}
+[[servers]]
+{% for k,v in grafana_ldap_arg.servers.items() if k != 'attributes' %}
+{% if v in [True, False] %}
+{{ k }} = {{ 'true' if v else 'false' }}
+{% else %}
+{{ k }} = {{ v | to_nice_json }}
+{% endif %}
+{% endfor %}
+
+[servers.attributes]
+{% for k,v in grafana_ldap_arg.servers.attributes.items() %}
+{{ k }} = {{ v | to_nice_json }}
+{% endfor %}
+
+{% for org in grafana_ldap_arg.group_mappings %}
+{%   if 'name' in org %}
+# {{ org.name }}
+{%   endif %}
+{% for group in org.groups %}
+[[servers.group_mappings]]
+org_id = {{ org.id }}
+{% for k,v in group.items() %}
+{% if v in [True, False] %}
+{{ k }} = {{ 'true' if v else 'false' }}
+{% else %}
+{{ k }} = "{{ v }}"
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endfor %}

@@ -1,0 +1,41 @@
+---
+- name: Grafana Dashboards files discover.
+  find:
+    paths: '{{ grafana_path }}/grafana/dashboards/'
+    file_type: 'any'
+  register: grafana_dashboard_wildcard_files_to_delete
+
+- name: Grafana Dashboards structure cleanup.
+  file:
+    path: '{{ item.path }}'
+    state: 'absent'
+  no_log: true
+  loop: '{{ grafana_dashboard_wildcard_files_to_delete.files }}'
+
+- name: Grafana Dashboards structure establish.
+  file:
+    path: '{{ grafana_path }}/grafana/dashboards/{{ item.category }}'
+    state: 'directory'
+    owner: 'grafana'
+    group: 'grafana'
+    mode: '0755'
+  loop: '{{ grafana_dashboard_arg }}'
+  no_log: true
+
+- name: Grafana dashboard file transfer.
+  copy:
+    src: 'dashboards/{{ item.0.category }}/{{ item.1 }}.json'
+    dest: '{{ grafana_path }}/grafana/dashboards/{{ item.0.category }}/{{ item.1 }}.json'
+    owner: 'grafana'
+    group: 'grafana'
+    mode: '0644'
+  loop: "{{ grafana_dashboard_arg|subelements('title') }}"
+
+- name: Set default home dashboard.
+  file:
+    src: '{{ grafana_path }}/grafana/dashboards/Universal/Home_Dashboard.json'
+    dest: '/usr/share/grafana/public/dashboards/home.json'
+    state: 'link'
+    force: 'yes'
+  failed_when: false
+  ignore_errors: true

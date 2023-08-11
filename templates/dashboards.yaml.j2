@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+- name: '{{ item.category }}'
+  orgId: 1
+  folder: '{{ item.category }}'
+  type: file
+  disableDeletion: false
+  updateIntervalSeconds: 60 #how often Grafana will scan for changed dashboards
+  options:
+    path: {{ grafana_path }}/grafana/dashboards/{{ item.category }}

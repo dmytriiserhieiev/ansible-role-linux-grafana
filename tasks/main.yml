@@ -1,0 +1,32 @@
+---
+- name: Include tasks for specific OS.
+  include: '{{ ansible_distribution_file_variety }}.yml'
+
+- name: Configure the grafana firewall.
+  include: 'firewall.yml'
+
+- name: Include certificate tasks.
+  include: 'certificates.yml'
+
+- name: Configuration the grafana.
+  include: 'configureation.yml'
+
+- name: Install the Grafana plugins.
+  include: 'plugin.yml'
+
+- name: Manage Grafana dashboards.
+  include: 'dashboard.yml'
+
+- name: Force the handler to run immediately.
+  meta: flush_handlers
+
+- name: Registered with HashiCorp Consul.
+  include: 'register.yml'
+  when:
+    - exporter_is_install | bool
+    - consul_public_register | bool
+
+- name: Disable Getting Started Panel.
+  shell: 'sqlite3 {{ grafana_path }}/grafana/grafana.db "update user set help_flags1 = 1;"'
+  no_log: true
+  failed_when: false

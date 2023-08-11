@@ -1,0 +1,195 @@
+---
+# General parameters #
+grafana_is_install: false # A boolean to determine whether or not to install the Grafana.
+grafana_path: '/data' # Specify the Grafana data directory.
+grafana_version: '8.3.10' # Specify the Grafana version.
+grafana_admin_user: 'admin' # The name of the default Grafana admin user.
+grafana_admin_password: 'changeme' # The password of the default Grafana admin.
+grafana_https: true # A boolean to determine whether or not to Encrypting HTTP client communications.
+grafana_proxy: false # A boolean to determine whether or not running behind a HaProxy.
+
+# Listen port #
+grafana_port: '3000'
+
+# NGinx parameters #
+grafana_ngx_dept: false # A boolean to determine whether or not proxy web interface and API traffic using NGinx.
+grafana_ngx_block_agents: false # Enables or disables block unsafe User Agents.
+grafana_ngx_block_string: false # Enables or disables block includes Exploits / File injections / Spam / SQL injections.
+grafana_ngx_compress: false # Enables or disables compression.
+grafana_ngx_domain: 'visual.example.com' # Defines domain name.
+grafana_ngx_port_http: '80' # NGinx HTTP listen port.
+grafana_ngx_port_https: '443' # NGinx HTTPs listen port.
+grafana_ngx_ssl_protocols: 'modern' # intermediate or modern, defines SSL protocol profile.
+grafana_ngx_backend: # Define groups of servers that can be referenced.
+  - '127.0.0.1'
+grafana_ngx_site: # Define backend traffic context.
+  - domain: '{{ grafana_ngx_domain }}'
+    type: 'proxy'
+    location: '/'
+    syntax:
+      - 'expires off'
+      - 'proxy_buffering off'
+      - 'proxy_set_header Host $http_host'
+      - 'proxy_set_header X-Real-IP $remote_addr'
+      - 'proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for'
+    backend_address: '{{ grafana_ngx_backend }}'
+    backend_port: '{{ grafana_port }}'
+    sticky: 'ip_hash'
+    keepalive: '32'
+
+# Server System Variables #
+grafana_arg:
+  allow_anonymous: false
+  allow_embedding: false
+  default_theme: 'dark' # dark or light
+  reporting_enabled: false
+  check_for_updates: false
+  timeout: '60'
+grafana_incident_levels_map: # Defines the display mode of incident alarm.
+  critical: 'critical'
+  high: 'high'
+  warning: 'warning'
+  info: 'info'
+
+# Datasource #
+grafana_ds_arg:
+  - name: 'prometheus'
+    settings:
+      - server: '{{ ansible_default_ipv4.address }}'
+        port: '19190'
+  - name: 'alertmanager'
+    settings:
+      - server: '{{ ansible_default_ipv4.address }}'
+        port: '9093'
+
+# Plugins #
+grafana_plugins:
+  - name: 'grafana-piechart-panel'
+    version: '1.6.2'
+  - name: 'camptocamp-prometheus-alertmanager-datasource'
+    version: '1.2.1'
+
+# LDAP Authentication #
+grafana_ldap_enabled: false # Enable LDAP integration.
+grafana_ldap_allow_sign_up: false # Allow sign from LDAP.
+grafana_ldap_arg:
+  servers:
+    host: 127.0.0.1
+    port: 389
+    use_ssl: false
+    start_tls: false
+    ssl_skip_verify: true
+    bind_dn: 'cn=admin,dc=example,dc=com'
+    bind_password: changeme
+    search_filter: '(cn=%s)'
+    search_base_dns:
+      - 'dc=example,dc=com'
+    group_search_filter: '(&(objectClass=posixGroup)(memberUid=%s))'
+    group_search_base_dns:
+      - 'ou=groups,dc=example,dc=com'
+    attributes:
+      name: givenName
+      surname: sn
+      username: cn
+      member_of: memberOf
+      email: email
+  group_mappings:
+    - name: Main Org.
+      id: 1
+      groups:
+        - group_dn: 'cn=admins,ou=groups,dc=example,dc=com'
+          org_role: Admin
+        - group_dn: 'cn=editors,ou=groups,dc=example,dc=com'
+          org_role: Editor
+        - group_dn: '*'
+          org_role: Viewer
+    - name: Other Org.
+      id: 2
+      groups:
+        - group_dn: 'cn=other,ou=groups,dc=example,dc=com'
+          org_role: Viewer
+
+# Dashboard #
+grafana_dashboard_arg:
+  - category: 'Network'
+    title:
+      - 'Azure_Virtual_network_gateway'
+  - category: 'Platform'
+    title:
+      - 'Dell_PowerEdge'
+      - 'Kubernetes_Cluster'
+      - 'VMware_vSphere_Overview'
+  - category: 'Databases'
+    title:
+      - 'Azure_Database_for_MySQL'
+      - 'Azure_Database_for_PostgreSQL'
+      - 'Azure_SQL_Elastic_pool'
+      - 'Azure_SQL_Managed_Instance'
+      - 'MongoDB_Cluster_Summary'
+      - 'MongoDB_InMemory'
+      - 'MongoDB_MMAPv1'
+      - 'MongoDB_Overview'
+      - 'MongoDB_ReplSet'
+      - 'MongoDB_WiredTiger'
+      - 'MySQL_Command_Handler_Counters_Compare'
+      - 'MySQL_InnoDB_Compression'
+      - 'MySQL_InnoDB_Metrics_Advanced'
+      - 'MySQL_InnoDB_Metrics'
+      - 'MySQL_MyISAM_Aria_Metrics'
+      - 'MySQL_Overview'
+      - 'MySQL_Performance_Schema'
+      - 'MySQL_Performance_Schema_Wait_Event_Analyses'
+      - 'MySQL_Query_Response_Time'
+      - 'MySQL_Replication'
+      - 'MySQL_Table_Statistics'
+      - 'MySQL_User_Statistics'
+      - 'PostgreSQL_Overview'
+  - category: 'OperatingSystem'
+    title:
+      - 'Cross_Server_Graphs'
+      - 'Linux_Disk_Performance'
+      - 'Linux_Disk_Space'
+      - 'Linux_Network_Overview'
+      - 'Linux_System_Overview'
+      - 'Windows_System_Overview'
+  - category: 'Universal'
+    title:
+      - 'Alertmanager_Overview'
+      - 'Azure_Cache_for_Redis'
+      - 'Azure_Storage_Account'
+      - 'Consul_Overview'
+      - 'Elasticsearch_Overview'
+      - 'Graylog_Overview'
+      - 'Home_Dashboard'
+      - 'JMX_Overview'
+      - 'Kafka_Overview'
+      - 'Kibana_Overview'
+      - 'Logstash_Overview'
+      - 'Minio_Overview'
+      - 'Netdata_Overview'
+      - 'NGinx_Overview'
+      - 'PHP-FPM_Overview'
+      - 'Prometheus_Overview'
+      - 'Redis_Overview'
+      - 'Smoke_Ping'
+      - 'Trickster_Overview'
+      - 'WebSite_Overview'
+
+# Service Mesh #
+environments: 'prd' # Define the service environment.
+datacenter: 'dc01' # Define the DataCenter.
+domain: 'local' # Define the Domain.
+customer: 'demo' # Define the customer name.
+#tags: # Define the service custom label.
+#  subscription: 'default'
+#  owner: 'nobody'
+#  department: 'Infrastructure'
+#  organization: 'The Company'
+#  region: 'China'
+exporter_is_install: false # Whether to install prometheus exporter.
+consul_public_register: false # Whether register a exporter service with public consul client.
+consul_public_exporter_token: '00000000-0000-0000-0000-000000000000' # Public Consul client ACL token.
+consul_public_http_prot: 'https' # The consul Hypertext Transfer Protocol.
+consul_public_http_port: '8500' # The consul HTTP API port.
+consul_public_clients: # List of public consul clients.
+  - '127.0.0.1'

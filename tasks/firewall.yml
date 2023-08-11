@@ -1,0 +1,14 @@
+---
+- name: Gathering service facts.
+  service_facts:
+  register: services_state
+
+- name: Allow grafana service port.
+  firewalld:
+    port: '{{ grafana_port }}/tcp'
+    permanent: 'true'
+    immediate: 'true'
+    state: 'enabled'
+  when:
+    - services_state.ansible_facts.services["firewalld.service"] is defined
+    - services_state.ansible_facts.services["firewalld.service"].state == 'running'

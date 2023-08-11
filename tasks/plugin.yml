@@ -1,0 +1,29 @@
+---
+- name: Install Grafana plugins.
+  grafana_plugin:
+    name: '{{ item.name }}'
+    grafana_repo: 'https://grafana.com/api/plugins'
+    grafana_plugins_dir: '{{ grafana_path }}/grafana/plugins'
+    version: '{{ item.version | default("latest") }}'
+    state: 'present'
+  loop: '{{ grafana_plugins }}'
+  register: grafana_plugin_install
+  until: grafana_plugin_install is succeeded
+  retries: 5
+  delay: 2
+  ignore_errors: true
+  notify: Restart grafana-server service.
+
+#- name: Install Grafana plugins.
+#  git:
+#    repo: '{{ item.name }}'
+#    version: '{{ item.version | default("master") }}'
+#    dest: '{{ grafana_path }}/grafana/plugins/{{ item.name.split("/")[-1] | lower }}'
+#  become: 'yes'
+#  become_user: 'grafana'
+#  loop: '{{ grafana_plugins }}'
+#  register: grafana_plugin_install
+#  until: grafana_plugin_install is succeeded
+#  retries: 5
+#  delay: 2
+#  ignore_errors: true

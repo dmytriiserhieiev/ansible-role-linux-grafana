@@ -1,0 +1,14 @@
+apiVersion: 1
+
+deleteDatasources:
+  - name: DS_PROMETHEUS
+    orgId: 1
+
+datasources:
+- name: DS_PROMETHEUS
+  type: prometheus
+  orgId: 1
+  access: proxy
+  url: http://{{ item.1.server }}:{{ item.1.port }}
+  # <bool> allow users to edit datasources from the UI.
+  editable: false

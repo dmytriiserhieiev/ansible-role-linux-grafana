@@ -1,0 +1,21 @@
+apiVersion: 1
+
+deleteDatasources:
+  - name: DS_ALERTMANAGER
+    orgId: 1
+
+datasources:
+- name: DS_ALERTMANAGER
+  type: camptocamp-prometheus-alertmanager-datasource
+  orgId: 1
+  access: proxy
+  url: http://{{ item.1.server }}:{{ item.1.port }}
+  # <bool> allow users to edit datasources from the UI.
+  editable: false
+  isDefault: false
+{% if grafana_incident_levels_map is defined %}
+  jsonData:
+{% for key,value in grafana_incident_levels_map.items() | list %}
+    severity_{{ key }}: {{ value }}
+{% endfor %}
+{% endif %}

@@ -1,0 +1,74 @@
+---
+- name: Check private key exists.
+  stat:
+    path: '{{ grafana_cert_path }}/server.key'
+  register: check_cert_keys
+
+- name: Certificate Signing operation.
+  block:
+    - name: Install requirement python package.
+      pip:
+        name: '{{ item }}'
+        state: 'present'
+        extra_args: '--default-timeout=120 -i https://{{ grafana_pypi_url }}/simple --trusted-host {{ grafana_pypi_url }}'
+      loop: '{{ grafana_python_dependent_packages }}'
+      register: grafana_python_status
+      until: grafana_python_status is succeeded
+      retries: 5
+      delay: 2
+    - name: Creating Certificate folder.
+      file:
+        dest: '{{ grafana_cert_path }}'
+        state: 'directory'
+        owner: 'grafana'
+        mode: '1750'
+    - name: Selfsigned CA file transfer.
+      copy:
+        src: 'ssl/{{ item }}'
+        dest: '{{ grafana_cert_path }}/{{ item }}'
+        owner: 'grafana'
+        mode: '640'
+      loop:
+        - 'ca-cert.pem'
+        - 'ca-key.pem'
+    - name: Generate an OpenSSL private key.
+      openssl_privatekey:
+        path: '{{ grafana_cert_path }}/server.key'
+        select_crypto_backend: 'cryptography'
+        size: '4096'
+        type: 'RSA'
+        owner: 'root'
+        mode: '0644'
+        state: 'present'
+    - name: Generate an OpenSSL Certificate Signing Request.
+      openssl_csr:
+        path: '{{ grafana_cert_path }}/server.csr'
+        privatekey_path: '{{ grafana_cert_path }}/server.key'
+        select_crypto_backend: 'cryptography'
+        common_name: 'Server'
+        subject_alt_name:
+          - 'DNS:{{ ansible_hostname }}'
+          - 'DNS:{{ ansible_fqdn }}'
+          - 'DNS:{{ ansible_default_ipv4.address }}'
+          - 'DNS:*.service.{{ datacenter }}.{{ domain }}'
+          - 'IP:{{ ansible_default_ipv4.address }}'
+        owner: 'root'
+        mode: '0644'
+        state: 'present'
+    - name: Generate an OpenSSL certificate signed with your own CA certificate.
+      openssl_certificate:
+        path: '{{ grafana_cert_path }}/server.crt'
+        csr_path: '{{ grafana_cert_path }}/server.csr'
+        ownca_path: '{{ grafana_cert_path }}/ca-cert.pem'
+        ownca_privatekey_path: '{{ grafana_cert_path }}/ca-key.pem'
+        select_crypto_backend: 'cryptography'
+        ownca_not_after: '+7305d'
+        provider: 'ownca'
+        owner: 'root'
+        mode: '0644'
+        state: 'present'
+    - name: Assemble the certificate and private key.
+      shell: 'cat {{ grafana_cert_path }}/server.crt {{ grafana_cert_path }}/ca-cert.pem >> {{ grafana_cert_path }}/certificate.pem'
+      become: 'yes'
+      become_user: 'grafana'
+  when: not check_cert_keys.stat.exists or check_cert_keys.stat.size == 0

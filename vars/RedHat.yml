@@ -1,0 +1,9 @@
+---
+grafana_repo_name: 'grafana'
+grafana_repo_url: 'http://mirrors.aliyun.com/grafana/yum/rpm/'
+grafana_software:
+  - 'git'
+  - 'grafana-{{ grafana_version }}-1'
+  - 'python-pip'
+  - 'libselinux-utils'
+  - 'policycoreutils-python'
